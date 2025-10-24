@@ -163,3 +163,6 @@ Note: With multi-threading, processing and completion messages may appear interl
 - Very complex lighting scenarios may not achieve perfect uniformity
 - Processing speed depends on image size and aggressiveness of cropping needed
 - PNG files preserve transparency but may result in larger file sizes than JPEG
+
+# Binaries
+- Download them from Actions
