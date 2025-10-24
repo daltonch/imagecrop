@@ -3,7 +3,8 @@
     "allow": [
       "Bash(/opt/homebrew/bin/go mod tidy:*)",
       "Bash(/opt/homebrew/bin/go build -o imagecrop)",
-      "Bash(./imagecrop:*)"
+      "Bash(./imagecrop:*)",
+      "Bash(time ./imagecrop:*)"
     ],
     "deny": [],
     "ask": []
