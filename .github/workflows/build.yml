@@ -1,0 +1,96 @@
+name: Build Binaries
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    name: Build for ${{ matrix.os }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: windows
+            goos: windows
+            goarch: amd64
+            output: imagecrop.exe
+          - os: linux
+            goos: linux
+            goarch: amd64
+            output: imagecrop
+          - os: macos
+            goos: darwin
+            goarch: amd64
+            output: imagecrop
+          - os: macos-arm
+            goos: darwin
+            goarch: arm64
+            output: imagecrop
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Build binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          go mod download
+          go build -o ${{ matrix.output }} -ldflags="-s -w" .
+
+      - name: Create archive
+        run: |
+          if [ "${{ matrix.os }}" = "windows" ]; then
+            zip imagecrop-${{ matrix.os }}-${{ matrix.goarch }}.zip ${{ matrix.output }}
+          else
+            tar czf imagecrop-${{ matrix.os }}-${{ matrix.goarch }}.tar.gz ${{ matrix.output }}
+          fi
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: imagecrop-${{ matrix.os }}-${{ matrix.goarch }}
+          path: |
+            imagecrop-${{ matrix.os }}-${{ matrix.goarch }}.zip
+            imagecrop-${{ matrix.os }}-${{ matrix.goarch }}.tar.gz
+          if-no-files-found: ignore
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Display structure of downloaded files
+        run: ls -R artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/**/*.zip
+            artifacts/**/*.tar.gz
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
